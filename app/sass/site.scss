@@ -1,5 +1,19 @@
 body {
-  background: #00ade9;
-  color: #fff;
+  // background: #00ade9;
+  // color: #fff;
   font-size: 50px;
+}
+
+iframe {
+    border: none;
+}
+
+#result {
+    display: flex;
+    #chart-wrapper {
+        width: 1200px;
+    }
+    #video-wrapper {
+        
+    }
 }
