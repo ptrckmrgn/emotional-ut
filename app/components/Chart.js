@@ -84,6 +84,7 @@ class Chart extends Component {
                 //         }
                 //     }
                 // },
+                maintainAspectRatio: false,
                 scales: {
                     yAxes: [{
                         ticks: {
@@ -106,7 +107,7 @@ class Chart extends Component {
 
     render() {
         return (
-            <div>
+            <div className="chart-wrapper">
                 <canvas id="chart"></canvas>
             </div>
         );
