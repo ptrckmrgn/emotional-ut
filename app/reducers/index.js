@@ -1,8 +1,8 @@
 import { combineReducers } from 'redux';
-// import reducer from './reducer';
+import Emotion from './emotion';
 
 const rootReducer = combineReducers({
-    // reducer: Reducer
+    emotion: Emotion
 });
 
 export default rootReducer;

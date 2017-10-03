@@ -1,41 +1,41 @@
 import axios from 'axios';
 
 export const PROCESS_VIDEO = 'process_video';
+export const CHECK_STATUS = 'check_status';
 
 const BASE_URL = 'https://westus.api.cognitive.microsoft.com/emotion/v1.0/';
-const KEY = '4cef4190845e41fe9d2930a3ef56698e';
+const KEY = '912bb25e231e4a85927d92635c3a9cb0';
 
-export const processVideo = () => {
+export const processVideo = (url) => {
+    // TODO: limit calls
     const PARAMS = 'recognizeinvideo?outputStyle=perFrame';
+    let result = null;
 
-    const result = axios.post(BASE_URL + PARAMS, {
-        timeout: 1000,
+    const response = axios({
+        method: 'post',
+        url: BASE_URL + PARAMS,
         headers: { 'Ocp-Apim-Subscription-Key': KEY },
-        data: { 'url': 'https://github.com/ptrckmrgn/emotional-ut/blob/master/20170916_163632.mp4?raw=true' }
+        data: { url: url }
     });
-
-    console.log(result);
 
     return {
         type: PROCESS_VIDEO,
-        payload: result
+        payload: response
     }
 }
 
-// export function fetchPhotos() {
-//     // const photos = axios.get(`${ROOT_URL}/photos/random/${CLIENT_ID}&count=${MAX_PHOTOS}`);
-//     const photos = axios.get('../../resources/test.json');
-//
-//
-//     return {
-//         type: FETCH_PHOTOS,
-//         payload: photos
-//     };
-// }
-//
-// export function selectPhoto(id) {
-//     return {
-//         type: SELECT_PHOTO,
-//         payload: id
-//     };
-// }
+export const checkStatus = (location) => {
+    // TODO: limit calls
+    // const PARAMS = `operations/${location}`;
+
+    const response = axios({
+        method: 'get',
+        url: location,
+        headers: { 'Ocp-Apim-Subscription-Key': KEY }
+    });
+
+    return {
+        type: CHECK_STATUS,
+        payload: response
+    }
+}

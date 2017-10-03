@@ -23,7 +23,7 @@ class Upload extends Component {
                     <div className="progressBar">
                         <div className="progress" style={{width: this.props.progress + '%'}}></div>
                     </div>
-                    <div>{this.props.transferred}/{this.props.totalSize} MB ({this.props.progress})</div>
+                    <div>{this.props.transferred}/{this.props.totalSize} MB ({this.props.progress}%)</div>
                     <button onClick={this.props.onCancel}>Cancel</button>
                 </div>
             );

@@ -1,11 +1,15 @@
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
+import { bindActionCreators } from 'redux';
 import axios from 'axios';
 import _ from 'lodash';
 import Firebase from 'firebase';
 
+import { processVideo, checkStatus } from '../actions';
 import Chart from '../components/Chart';
 import Video from '../components/Video';
 import UploadFile from './UploadFile';
+import Emotion from './Emotion';
 
 class App extends Component {
     constructor(props) {
@@ -23,9 +27,12 @@ class App extends Component {
         this.setScreenURL = this.setScreenURL.bind(this);
     }
 
-    componentDidMount() {
-        this.getData();
+    startPoll() {
+        console.log('polling');
+        this.timeout = setTimeout(() => this.props.checkStatus(this.props.emotion.operation), 7000);
+    }
 
+    componentDidMount() {
         const config = {
             apiKey: 'AIzaSyCzsSGWe-Y455OMj2XbGkY-qZMWj3YERsU',
             authDomain: 'emotional-ut.firebaseapp.com',
@@ -35,42 +42,30 @@ class App extends Component {
         Firebase.initializeApp(config);
     }
 
-    getData() {
-        // axios.get('test.json')
-        axios.get('../../resources/test.json')
-            .then((response) => {
-                const data = JSON.parse(response.data.processingResult);
-                this.setState({data});
+    componentWillUnmount() {
+        clearTimeout(this.timeout);
+    }
 
-                let results = {
-                    anger: [],
-                    contempt: [],
-                    disgust: [],
-                    fear: [],
-                    happiness: [],
-                    neutral: [],
-                    sadness: [],
-                    surprise: [],
-                };
-                let time = 0;
-                const timescale = data.timescale;
-                _.map(data.fragments, fragment => {
-                    const interval = fragment.interval;
-                    _.map(fragment.events, event => {
-                        time = _.round(time, 2);
-                        results.anger.push({x: time, y: _.round(event[0].scores.anger * 100)});
-                        results.contempt.push({x: time, y: _.round(event[0].scores.contempt * 100)});
-                        results.disgust.push({x: time, y: _.round(event[0].scores.disgust * 100)});
-                        results.fear.push({x: time, y: _.round(event[0].scores.fear * 100)});
-                        results.happiness.push({x: time, y: _.round(event[0].scores.happiness * 100)});
-                        results.neutral.push({x: time, y: _.round(event[0].scores.neutral * 100)});
-                        results.sadness.push({x: time, y: _.round(event[0].scores.sadness * 100)});
-                        results.surprise.push({x: time, y: _.round(event[0].scores.surprise * 100)});
-                        time += (interval / timescale);
-                    });
-                });
-                this.setState({results});
-            });
+    componentWillReceiveProps(nextProps) {
+
+    }
+
+    componentWillUpdate(nextProps, nextState) {
+        if (this.state.videoFaceURL != nextState.videoFaceURL) {
+            this.props.processVideo(nextState.videoFaceURL);
+        }
+
+        if (nextProps.emotion.operation &&
+                nextProps.emotion.operation != this.props.emotion.operation) {
+            console.log(nextProps.emotion.operation);
+            this.startPoll();
+        }
+
+        if (nextProps.emotion.data.status != 'Succeeded') {
+            console.log(nextProps.emotion.data.status);
+            clearTimeout(this.timeout);
+            this.startPoll();
+        }
     }
 
     setFaceURL(videoFaceURL) {
@@ -82,13 +77,13 @@ class App extends Component {
     }
 
     render() {
-        if (!this.state.results) {
-            return (
-                <div>
-                    Loading...
-                </div>
-            );
-        }
+        // if (!this.state.results) {
+        //     return (
+        //         <div>
+        //             Loading...
+        //         </div>
+        //     );
+        // }
 
         return (
             <div>
@@ -108,8 +103,15 @@ class App extends Component {
                         )}
                     </div>
                     <div id="results">
-                        {this.state.results &&
-                            <Chart data={this.state.results} />
+                        <Emotion
+                            isFetching={this.props.emotion.isFetching}
+                            data={this.props.emotion.data}
+                        />
+                        {this.props.emotion.operation &&
+                            <div>
+                                {this.props.emotion.data.status}/
+                                {this.props.emotion.data.progress}
+                            </div>
                         }
                     </div>
                 </div>
@@ -118,4 +120,14 @@ class App extends Component {
     }
 }
 
-export default App;
+const mapStateToProps = state => {
+    return {
+        emotion: state.emotion
+    };
+}
+
+const mapDispatchToProps = dispatch => {
+    return bindActionCreators({ processVideo, checkStatus }, dispatch);
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(App);
