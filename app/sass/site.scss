@@ -1,11 +1,13 @@
 body {
     margin: 0;
+    // background: #111;
 }
 .container {
     display: flex;
     flex-wrap: wrap;
     #video-face,
     #video-screen {
+        // background: #333;
         width: calc(50% - 20px);
         height: calc(50vh - 20px);;
         padding: 10px;

@@ -1,11 +1,15 @@
-import _ from 'lodash';
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
+import { bindActionCreators } from 'redux';
+import _ from 'lodash';
 import Firebase from 'firebase';
-import Mime from 'mime-types';
+
+import { updateInterview } from '../actions/interviews';
 
 import Upload from '../components/Upload';
+import Player from '../components/Player';
 
-class UploadFile extends Component {
+class Video extends Component {
     constructor(props) {
         super(props);
 
@@ -31,10 +35,11 @@ class UploadFile extends Component {
                 this.setState({ error });
             }
             else {
-                const storageRef = Firebase.storage().ref();
-                const filename = _.toString(Date.now()) + '.' + file.name.split('.').pop();
-                const fileRef = storageRef.child(filename);
-                const uploadTask = fileRef.put(file);
+                const extension = file.name.split('.').pop();
+                const uploadTask = Firebase.storage().ref()
+                    .child(`${this.props.id}-${this.props.type}.${extension}`)
+                    .put(file);
+
                 this.setState({ uploadTask });
 
                 uploadTask.on(Firebase.storage.TaskEvent.STATE_CHANGED,
@@ -46,7 +51,6 @@ class UploadFile extends Component {
 
                         switch (snapshot.state) {
                             case Firebase.storage.TaskState.PAUSED: // or 'paused'
-                                console.log('Upload is paused');
                                 break;
                             case Firebase.storage.TaskState.RUNNING: // or 'running'
                                 this.setState({ running: true });
@@ -69,8 +73,12 @@ class UploadFile extends Component {
                         }
                         this.setState({ running: false });
                     }, () => {
-                        // Set URL for the video
-                        this.props.setURL(uploadTask.snapshot.downloadURL);
+                        this.props.updateInterview(
+                            this.props.id,
+                            this.props.type,
+                            uploadTask.snapshot.downloadURL
+                        );
+                        this.props.processVideo(uploadTask.snapshot.downloadURL);
                     }
                 );
             }
@@ -82,19 +90,30 @@ class UploadFile extends Component {
     }
 
     render() {
-        return (
-            <Upload
-                running={this.state.running}
-                transferred={this.state.transferred}
-                totalSize={this.state.totalSize}
-                progress={this.state.progress}
-                error={this.state.error}
+        if (this.props.url) {
+            return (
+                <Player url={this.props.url}/>
+            );
+        }
+        else {
+            return (
+                <Upload
+                    running={this.state.running}
+                    transferred={this.state.transferred}
+                    totalSize={this.state.totalSize}
+                    progress={this.state.progress}
+                    error={this.state.error}
 
-                uploadFile={this.uploadFile}
-                onCancel={this.onCancel}
-            />
-        )
+                    uploadFile={this.uploadFile}
+                    onCancel={this.onCancel}
+                />
+            );
+        }
     }
 }
 
-export default UploadFile;
+const mapDispatchToProps = dispatch => {
+    return bindActionCreators({ updateInterview }, dispatch);
+}
+
+export default connect(null, mapDispatchToProps)(Video);

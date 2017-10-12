@@ -1,11 +1,11 @@
 import _ from 'lodash';
 
-import { PROCESS_VIDEO, CHECK_STATUS } from '../actions';
+import { PROCESS_VIDEO, CHECK_STATUS } from '../actions/emotion';
 
 const initialState = {
-    data: {},
-    operation: {},
-    isFetching: false
+    data: null,
+    operation: null,
+    isFetching: false // status: initial, [fetching, fetched]
 };
 
 export default function(state = initialState, action) {
