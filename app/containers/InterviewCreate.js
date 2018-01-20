@@ -5,7 +5,7 @@ import { connect } from 'react-redux';
 import _ from 'lodash';
 
 import { createInterview, resetCreateInterview } from '../actions/interviews'
-import PageLoading from '../components/PageLoading'
+import LoadingPage from '../components/LoadingPage'
 
 class InterviewCreate extends Component {
     constructor(props) {
@@ -19,8 +19,13 @@ class InterviewCreate extends Component {
         this.onClickCreate = this.onClickCreate.bind(this);
     }
 
-    componentDidMount() {
-        // this.props.createInterview();
+    onChangeName(name) {
+        this.setState({ name });
+    }
+
+    onClickCreate() {
+        this.props.createInterview(this.state.name);
+        this.setState({ loading: true });
     }
 
     componentDidUpdate() {
@@ -33,30 +38,36 @@ class InterviewCreate extends Component {
         this.props.resetCreateInterview();
     }
 
-    onChangeName(name) {
-        this.setState({ name });
-    }
-
-    onClickCreate() {
-        this.props.createInterview(this.state.name);
-        this.setState({ loading: true });
-    }
-
     render() {
-        if (this.state.loading) {
-            return (
-                <PageLoading />
-            );
-        }
+        // if (this.state.loading) {
+        //     return (
+        //         <LoadingPage />
+        //     );
+        // }
 
         return (
             <div>
-                <label>Interview Name</label>
-                <input
-                    type="text"
-                    onChange={event => this.onChangeName(event.target.value)}
-                />
-                <button onClick={this.onClickCreate}>CREATE</button>
+                <div className="field">
+                    <label className="label">Interview Name</label>
+                    <div className="control">
+                        <input
+                            className="input"
+                            type="text"
+                            placeholder="Name"
+                            onChange={event => this.onChangeName(event.target.value)}
+                        />
+                    </div>
+                </div>
+                {!this.state.loading ? (
+                    <button
+                        onClick={this.onClickCreate}
+                        className="button is-primary"
+                    >
+                        Create
+                    </button>
+                ) : (
+                    <button className="button is-primary is-loading">Create</button>
+                )}
             </div>
         )
     }

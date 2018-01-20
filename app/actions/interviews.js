@@ -41,9 +41,10 @@ export const createInterview = name => {
             created: timestamp,
             modified: timestamp,
             name: name,
+            results: null,
+            status: 'UNPROCESSED',
             videoFace: null,
             videoScreen: null,
-            results: null
         }).then(snapshot => {
             dispatch({
                 type: CREATE_INTERVIEW,
@@ -57,13 +58,9 @@ export const resetCreateInterview = () => {
     return { type: RESET_CREATE_INTERVIEW };
 }
 
-export const updateInterview = (id, key, value, callback) => {
-    return dispatch => {
-        Interviews.doc(id).update({
-            modified: _.now(),
-            [key]: value
-        });
-    };
+export const updateInterview = (id, values, callback) => {
+    values.modified = _.now();
+    Interviews.doc(id).update(values);
 }
 
 export const deleteInterview = (id, callback) => {

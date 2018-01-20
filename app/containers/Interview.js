@@ -1,110 +1,150 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { Link } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
+import { Link } from 'react-router-dom';
 import _ from 'lodash';
+import Firebase from 'firebase';
+import 'firebase/firestore';
+import axios from 'axios'
 
-import { deleteInterview } from '../actions/interviews';
-import { processVideo, checkStatus } from '../actions/emotion';
+import { updateInterview, deleteInterview } from '../actions/interviews';
+// import { processVideo, checkStatus, setStatus } from '../actions/emotion';
+
+import uploadFile from '../utils/uploadFile';
 
 import Video from './Video';
 import Results from './Results';
-import PageLoading from '../components/PageLoading'
+import LoadingPage from '../components/LoadingPage'
+
+const BASE_URL = 'https://westus.api.cognitive.microsoft.com/emotion/v1.0/';
+const KEY = '912bb25e231e4a85927d92635c3a9cb0';
 
 class Interview extends Component {
     constructor(props) {
         super(props);
 
         this.state = {
-            data: null,
-            results: null,
-            videoFaceURL: '',
-            videoScreenURL: '',
+            id: this.props.match.params.id,
+            progress: 0,
+            results: null
         };
 
-        this.deleteInterview = this.deleteInterview.bind(this);
         this.processVideo = this.processVideo.bind(this);
+        this.deleteInterview = this.deleteInterview.bind(this);
     }
 
-    componentWillReceiveProps(nextProps) {
-        if (nextProps.emotion.isFetching) {
+    componentDidMount() {
+        switch (this.props.interview.status) {
+            case 'UNPROCESSED':
+                if (this.props.interview.videoFace) {
+                    this.processVideo(this.props.interview.videoFace);
+                }
+                break;
+            case 'PROCESSING':
+                console.log('processing');
+                this.checkStatus(this.props.interview.operation);
+                break;
+            case 'SUCCEEDED':
+                this.setState({ results: this.props.interview.results });
+                break;
+            // TODO: 'FAILED'
         }
     }
 
-    componentWillUpdate(nextProps, nextState) {
-        // if (nextProps.interview &&
-        //         this.props.interview.videoFace != nextProps.interview.videoFace) {
-        //     this.props.processVideo(nextProps.interview.videoFace);
-        // }
+    processVideo(url) {
+        // return null;
+        // TODO: limit calls
+        const PARAMS = 'recognizeinvideo?outputStyle=perFrame';
+        let result = null;
 
-        if (nextProps.emotion.isFetching) {
-            this.startPoll();
-        }
-
-        // if (nextProps.emotion.operation &&
-        //         nextProps.emotion.operation != this.props.emotion.operation) {
-        //     this.startPoll();
-        // }
-
-        // if (nextProps.emotion.data.status != 'Succeeded') {
-        //     clearTimeout(this.timeout);
-        // }
+        axios({
+            method: 'post',
+            url: BASE_URL + PARAMS,
+            headers: { 'Ocp-Apim-Subscription-Key': KEY },
+            data: { url: url }
+        }).then(response => {
+            Firebase.firestore().collection('interviews').doc(this.state.id).update({
+                modified: _.now(),
+                status: 'PROCESSING',
+                operation: response.headers['operation-location']
+            }).then(() => {
+                this.checkStatus(response.headers['operation-location']);
+            });
+        });
     }
 
-    componentDidUpdate(prevProps, prevState) {
-        // if (this.props.emotion.operation &&
-        //         this.props.emotion.operation != prevProps.emotion.operation) {
-        //     this.startPoll();
-        // }
+    checkStatus(location) {
+        console.log('checking');
+        // TODO: limit calls
+        axios({
+            method: 'get',
+            url: location,
+            headers: { 'Ocp-Apim-Subscription-Key': KEY }
+        }).then(response => {
+            if (response.data.status == 'Succeeded') {
+                console.log('succeeded', response);
+                // this.props.updateInterview(this.state.id, {
+                //     status: 'SUCCEEDED',
+                //     results: response.data.processingResult
+                // });
+                const blobResults = new File([response.data.processingResult], { type: 'text/plain' });
+                console.log(blobResults);
+                const uploadTask = uploadFile(this.state.id, 'results', blobResults, 'txt');
+                uploadTask.on('state_changed', snapshot => {}, error => {}, () => {
+                    this.props.updateInterview(this.state.id, {
+                        status: 'SUCCEEDED',
+                        results: uploadTask.snapshot.downloadURL
+                    });
+                });
+
+                // this.props.updateInterview(this.state.id, 'status', 'SUCCEEDED');
+                // this.props.updateInterview(this.state.id, 'results', response.data.processingResult);
+                // this.setState({ results: response.data.processingResult });
+            }
+            else {
+                const progress = response.data.progress || 0;
+                this.setState({ progress });
+                this.timeout = setTimeout(() => this.checkStatus(location), 10000);
+            }
+        }).catch(error => {
+            switch (error.response.status) {
+                case 404: // Operation not found, re-process
+                    this.processVideo(this.props.interview.videoFace);
+                    break;
+                case 429: // Rate limit hit, slow down
+                    this.timeout = setTimeout(() => this.checkStatus(location), 60000);
+                    break;
+                default:
+                    console.log(error.response.status, 'Bad response');
+            }
+        });
     }
 
     componentWillUnmount() {
         clearTimeout(this.timeout);
     }
 
-    startPoll() {
-        this.timeout = setTimeout(() => this.props.checkStatus(this.props.emotion.operation), 6000);
-    }
-
-    processVideo(url) {
-        this.props.processVideo(url);
-    }
-
-    // setFaceURL(videoFaceURL) {
-    //     this.setState({ videoFaceURL });
-    //
-    // }
-    //
-    // setScreenURL(videoScreenURL) {
-    //     this.setState({ videoScreenURL });
-    //     Firebase.database().ref('experiments/test').set({
-    //         video_screen: videoScreenURL
-    //     });
-    // }
-
-    deleteInterview(id) {
-        this.props.deleteInterview(id, () => {
+    deleteInterview(event) {
+        event.target.classList.add('is-loading');
+        this.props.deleteInterview(this.state.id, () => {
             this.props.history.push('/');
         });
     }
 
     render() {
-        const { id } = this.props.match.params;
-        const { interview } = this.props;
-
-        if (!interview) {
+        if (!this.props.interview) {
             return (
-                <PageLoading />
+                <LoadingPage />
             );
         }
         return (
             <div>
-                <button onClick={() => this.deleteInterview(id)}>DELETE</button>
-                <Link to='/'>BACK</Link>
+                <Link to='/' className="button is-secondary">BACK</Link>
+                <button onClick={this.deleteInterview} className="button is-danger">DELETE</button>
                 <div className="container">
                     <div id="video-face">
                         <Video
-                            id={id}
+                            id={this.state.id}
                             type='videoFace'
                             url={this.props.interview.videoFace}
                             processVideo={this.processVideo}
@@ -112,15 +152,16 @@ class Interview extends Component {
                     </div>
                     <div id="video-screen">
                         <Video
-                            id={id}
+                            id={this.state.id}
                             type='videoScreen'
                             url={this.props.interview.videoScreen}
-                            processVideo={this.processVideo}
                         />
                     </div>
                     <div id="results">
                         <Results
-                            id={id}
+                            id={this.state.id}
+                            status={this.props.interview.status}
+                            progress={this.state.progress}
                             results={this.props.interview.results}
                         />
                     </div>
@@ -133,18 +174,24 @@ class Interview extends Component {
 const mapStateToProps = (state, ownProps) => {
     let interview = null;
 
-    if (state.interviews.interviews) {
-        interview = state.interviews.interviews[ownProps.match.params.id];
+    if (state.interviews.list) {
+        interview = state.interviews.list[ownProps.match.params.id];
     }
 
     return {
         interview: interview,
-        emotion: state.emotion
+        // emotion: state.emotion
     };
 }
 
 const mapDispatchToProps = dispatch => {
-    return bindActionCreators({ deleteInterview, processVideo, checkStatus }, dispatch);
+    return bindActionCreators({
+        updateInterview,
+        deleteInterview,
+        // processVideo,
+        // checkStatus,
+        // setStatus
+    }, dispatch);
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(Interview);

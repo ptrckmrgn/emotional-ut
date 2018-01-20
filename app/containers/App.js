@@ -2,12 +2,14 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { BrowserRouter, Route, Switch } from 'react-router-dom';
-import Firebase from 'firebase';
 
 import { fetchInterviews } from '../actions/interviews';
 import Interview from './Interview';
-import Interviews from './Interviews';
+import InterviewList from './InterviewList';
 import InterviewCreate from './InterviewCreate';
+
+import Navigation from '../components/Navigation';
+import LoadingPage from '../components/LoadingPage';
 
 class App extends Component {
     constructor(props) {
@@ -19,13 +21,20 @@ class App extends Component {
     }
 
     render() {
+        if (!this.props.interviews) {
+            return (
+                <LoadingPage />
+            );
+        }
+
         return (
             <BrowserRouter>
                 <div>
+                    <Navigation />
                     <Switch>
                         <Route path='/interview/create' component={InterviewCreate} />
                         <Route path='/interview/:id' component={Interview} />
-                        <Route path='/' component={Interviews} />
+                        <Route path='/' component={InterviewList} />
                     </Switch>
                 </div>
             </BrowserRouter>
@@ -33,8 +42,14 @@ class App extends Component {
     }
 }
 
+const mapStateToProps = state => {
+    return {
+        interviews: state.interviews.list
+    };
+}
+
 const mapDispatchToProps = dispatch => {
     return bindActionCreators({ fetchInterviews }, dispatch);
 }
 
-export default connect(null, mapDispatchToProps)(App);
+export default connect(mapStateToProps, mapDispatchToProps)(App);

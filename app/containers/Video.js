@@ -75,10 +75,11 @@ class Video extends Component {
                     }, () => {
                         this.props.updateInterview(
                             this.props.id,
-                            this.props.type,
-                            uploadTask.snapshot.downloadURL
+                            { [this.props.type]: uploadTask.snapshot.downloadURL }
                         );
-                        this.props.processVideo(uploadTask.snapshot.downloadURL);
+                        if (this.props.processVideo) {
+                            this.props.processVideo(uploadTask.snapshot.downloadURL);
+                        }
                     }
                 );
             }

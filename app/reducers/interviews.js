@@ -7,19 +7,17 @@ import {
 } from '../actions/interviews';
 
 const initialState = {
-    interviews: null,
+    list: null,
     createInterview: null
 }
 
 export default function(state = initialState, action) {
-    const newState = Object.assign({}, state);
-
     switch (action.type) {
         case FETCH_INTERVIEWS:
             // return action.interviews;
             // const interviews = action.interviews;
             return Object.assign({}, state, {
-                interviews: action.interviews
+                list: action.interviews
             });
         case CREATE_INTERVIEW:
             return Object.assign({}, state, {

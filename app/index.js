@@ -6,6 +6,7 @@ import thunk from 'redux-thunk';
 
 import reducers from './reducers';
 import App from './containers/App';
+require('../node_modules/bulma/css/bulma.css');
 require('./index.scss');
 
 const createStoreWithMiddleware = applyMiddleware(thunk)(createStore);

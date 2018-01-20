@@ -5,13 +5,16 @@ import _ from 'lodash';
 
 export const PROCESS_VIDEO = 'process_video';
 export const CHECK_STATUS = 'check_status';
+export const SET_STATUS = 'set_status';
 
 const BASE_URL = 'https://westus.api.cognitive.microsoft.com/emotion/v1.0/';
 const KEY = '912bb25e231e4a85927d92635c3a9cb0';
 
-export const processVideo = url => {
+const Interviews = Firebase.firestore().collection('interviews');
+
+export const processVideo = (id, url) => {
     // TODO: limit calls
-    const PARAMS = 'recognizeinvideo?outputStyle=perFrame';
+    const PARAMS = 'recognizeinvideo';
     let result = null;
 
     return dispatch => {
@@ -21,9 +24,16 @@ export const processVideo = url => {
             headers: { 'Ocp-Apim-Subscription-Key': KEY },
             data: { url: url }
         }).then(response => {
-            dispatch({
-                type: PROCESS_VIDEO,
-                payload: response
+            Interviews.doc(id).update({
+                modified: _.now(),
+                status: 'PROCESSING',
+                operation: response.headers['operation-location']
+            }).then(() => {
+                this.checkStatus(response.headers['operation-location']);
+                dispatch({
+                    type: PROCESS_VIDEO,
+                    payload: response
+                });
             });
         });
     }
@@ -42,5 +52,12 @@ export const checkStatus = location => {
                 payload: response
             });
         });
+    };
+}
+
+export const setStatus = status => {
+    return {
+        type: SET_STATUS,
+        payload: status
     };
 }

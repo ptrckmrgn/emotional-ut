@@ -13,13 +13,18 @@
     "presets": [
       "env",
       "react"
+    ],
+    "plugins": [
+      "emotion"
     ]
   },
   "author": "ptrckmrgn",
   "license": "ISC",
   "dependencies": {
     "axios": "^0.16.2",
+    "bulma": "^0.6.0",
     "chart.js": "^2.7.0",
+    "emotion": "^8.0.8",
     "firebase": "^4.5.0",
     "lodash": "^4.17.4",
     "mime-types": "^2.1.17",
@@ -27,6 +32,7 @@
     "react-dom": "^15.6.1",
     "react-redux": "^5.0.6",
     "react-router-dom": "^4.2.2",
+    "react-spinners": "^0.1.8",
     "redux": "^3.7.2",
     "redux-promise": "^0.5.3",
     "redux-thunk": "^2.2.0"
